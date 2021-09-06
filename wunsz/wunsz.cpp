@@ -18,9 +18,16 @@ void direction(int x, int y)
 {
     system("cls");
     
-    
-    for (int i = 0; i < y; i++) { cout << endl; }
-    cout << setw(x) << head<<y;
+    int szer = 40;
+    int i = 0;
+    for (; i < y; i++) { cout <<setw(szer)<<"|" << endl; }
+    cout << setw(x) << head<<setw(szer-x)<<'|';
+    i +=1;
+    cout << endl;
+    for (; i < 20; i++) { cout << setw(szer) << "|" << endl; }
+    cout.fill('_');
+    cout << setw(39) << '_'<<right<<"|" << endl;
+    cout.fill(' ');
 }
 
 int main()
