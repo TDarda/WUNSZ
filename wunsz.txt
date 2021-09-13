@@ -1,4 +1,4 @@
-#include <iomanip>
+#include<iomanip>
 #include<windows.h>
 #include<iostream>
 #include<conio.h>
@@ -6,11 +6,17 @@
 #include<ctime>
 #include<cstdlib>
 #include<algorithm>
+#include<map>
+#include<functional>
+#include<fstream>
+#include<sstream>
+#include<vector>
 
 #define KEY_UP 72       //strzałka w górę
 #define KEY_DOWN 80     //strzałka w dół
 #define KEY_LEFT 75     //strzałka w lewo
 #define KEY_RIGHT 77    //strzałka w prawo
+#define ENTER 13		//enter
 #define HEIGHT 15    //wysokość poziomu
 #define WIDTH 30        //szerokość poziomu
 
@@ -22,20 +28,26 @@ char choose, last_choose;
 
 int appleX, appleY, score = 0;
 
-int choose_count = 0;
+int choose_count = 0, pace = 330, menu_pick=0;
 
 bool _make_bigger, game_on = true;
+
+fstream file;
 
 deque<pair<int, int>>snake = {
 		{7,4}, {7,5}, {7,6}, {7,7}
 };
 
+multimap<int, string>menu_items = {
+		{1,"GRAJ"},{2,"TABLICA WYNIKÓW"},{3,"WYJDŹ"}
+};
+
+map<int, string>records;
 
 void build_a_level() //budowa poziomu
 {
 	for (int i = 0; i < HEIGHT; i++)
 	{
-
 		for (int j = 0; j < WIDTH; j++)
 		{
 			Level[0][j] = '#';
@@ -50,11 +62,9 @@ void delete_a_level() //czyszczecnie poziomu
 {
 	for (int i = 0; i < HEIGHT; i++)
 	{
-
 		for (int j = 0; j < WIDTH; j++)
 		{
 			Level[i][j] = ' ';
-
 		}
 	}
 }
@@ -64,12 +74,13 @@ void create_a_snake()  //stworzenie węża na planszy
 	for (deque<pair<int, int>>::iterator iter = snake.begin(); iter != snake.end(); iter++)
 	{
 		Level[iter->first][iter->second] = 'o';
-
 	}
-
-
 }
 
+void pace_game(int& _pace)   // zmienia tempo poruszania się węża
+{
+	if ((score + 1) % 5 == 0) { _pace -= 15; }
+}
 
 void show_a_level()   //wyświetlenie poziomu
 {
@@ -77,11 +88,9 @@ void show_a_level()   //wyświetlenie poziomu
 	for (int i = 0; i < HEIGHT; i++)
 	{
 		cout << endl;
-
 		for (int j = 0; j < WIDTH; j++)
 		{
 			cout << Level[i][j];
-
 		}
 	}
 }
@@ -114,15 +123,12 @@ void snake_manipulation(int& up_down, int& left_right, bool make_bigger)  //doda
 	{
 		snake.push_front(pair<int, int>(up_down, left_right));
 	}
-
 }
 
 void apple_generator(int& appleX, int& appleY)  //generuje jabłko
 {
 	appleX = rand() % (WIDTH - 2) + 1;
 	appleY = rand() % (HEIGHT - 2) + 1;
-
-
 }
 
 void apple_position(const int& appleX, const int& appleY)  //ustawia na planszy jabłko
@@ -130,21 +136,70 @@ void apple_position(const int& appleX, const int& appleY)  //ustawia na planszy 
 	Level[appleY][appleX] = '@';
 }
 
-
 void apple_collision(bool& make_bigger)   //sprawdza czy była kolizja, jeśli tak to generuje nowe jabłko i wysyła sygnał aby powiększyć węża
 {
 	if (snake.front().first == appleY && snake.front().second == appleX)
 	{
-		apple_generator(appleX, appleY); score = +2; make_bigger = true;
+		apple_generator(appleX, appleY); score++; make_bigger = true; pace_game(pace);
 	}
 	else { make_bigger = false; }
+}
+
+void write_result() 
+{
+	string nick;
+	cout <<"TWÓJ WYNIK TO: "<<score << " DAJ NICK: "; cin >> nick;
+	file.open("rekordy.txt", ios::app);
+	file << score << endl << nick << endl;
+	cout << endl << "WYNIK ZAPISANY W TABELI REKORDÓW";
+	file.close();
+	Sleep(3000);
+}
+
+void read_result() 
+{
+	file.open("rekordy.txt", ios::in);
+	vector<string>tmp;
+	int i = 0;
+	if(!file.good())
+	{
+		cout << "NIE MA JESZCZE ŻADNYCH REKORDÓW";
+	}
+	else 
+	{
+		while (!file.eof()) 
+		{
+			string line;
+			getline(file, line);
+			tmp.push_back(line);
+		}
+		for (int i = 0; i < tmp.size(); i++) 
+		{
+			int intiger = stoi(tmp[i]);
+			string line = tmp[++i];
+			records.insert({intiger, line});
+		}
+		for(multimap<int, string>::iterator iter=records.begin(); iter!=records.end();iter++)
+		{
+			cout << ++i << ". " << iter->second << " " << iter->first << endl;
+		}
+
+	}
+	file.close();
+	getchar();
 }
 
 void game_over()
 {
 	system("cls");
-	cout << "GAME OVER";
+	cout << "GAME OVER"<<endl<<endl;
+	write_result();
 	exit(0);
+}
+
+void show_score()   // pokazuje wynik 
+{
+	cout << endl << "SCORE :" << score;
 }
 
 void body_collision(bool& _game_on) //kolizja z ciałem węża, sam siebie gryzie
@@ -162,10 +217,8 @@ void game_sequence(char direct) // sekwencja gry, funkcja, która ma na celu zap
 	int snakeY = snake.front().first;
 	int snakeX = snake.front().second;
 
-
-
+	Sleep(pace);
 	delete_a_level();
-
 
 	if (direct == 'u')snake_manipulation(--snakeY, snakeX, _make_bigger);
 	if (direct == 'd')snake_manipulation(++snakeY, snakeX, _make_bigger);
@@ -178,12 +231,9 @@ void game_sequence(char direct) // sekwencja gry, funkcja, która ma na celu zap
 	apple_collision(_make_bigger);
 	body_collision(game_on);
 	show_a_level();
+	show_score();
+}
 
-}
-void test()
-{
-	cout << endl << game_on;
-}
 
 char choosing(char& choose, char& last_choose)  // ta funkcja zapobiega zawracaniu na sobie węża
 {
@@ -220,69 +270,102 @@ char choosing(char& choose, char& last_choose)  // ta funkcja zapobiega zawracan
 		}
 		break;
 	}
-
 	return choose;
-
 }
 
 void game()  //właściwa gra
 {
-
-
 	apple_generator(appleX, appleY);
 
 	while (game_on)
 	{
-
-
-
 		switch (choosing(choose, last_choose))
 		{
 		case KEY_UP:
-
 			while (!_kbhit())
 			{
-				Sleep(330);   game_sequence('u'); test();
+				game_sequence('u');
 			}
 			break;
-
 		case KEY_DOWN:
-
 			while (!_kbhit())
 			{
-				Sleep(330);    game_sequence('d'); test();
+				game_sequence('d');
 			}
 			break;
-
-
-
-
 		case KEY_RIGHT:
-
 			while (!_kbhit())
 			{
-				Sleep(330);     game_sequence('r'); test();
+				game_sequence('r');
 			}
 			break;
-
 		case KEY_LEFT:
-
 			while (!_kbhit())
 			{
-				Sleep(330); game_sequence('l'); test();
+				game_sequence('l');
 			}
+			break;
+		}
+	}
+}
 
+int menu_choice(int &_menu_pick) //	wybór opcji z menu głównego
+{
+	char _menu_choice = _getch();
+	if (_menu_choice == KEY_DOWN && _menu_pick<2)_menu_pick++;
+	if (_menu_choice == KEY_UP && _menu_pick>0)_menu_pick--;
+	if (_menu_choice == ENTER )return _menu_pick;
+	if (_menu_choice == '1')return 0;
+	if (_menu_choice == '2')return 1;
+	if (_menu_choice == '3')return 2;
+}
+
+void mark(int mark) //podkreśla w menu na mark=240, i na normalnie mark=7
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), mark);
+}
+
+void show_menu_items()	//wyświetla menu w konsoli
+{
+	system("cls");
+	for (map<int, string>::iterator it = menu_items.begin(); it != menu_items.end(); it++) 
+	{
+		if (it->first == menu_pick+1)mark(240);
+		cout << "[" << it->first << "]"<<setw(20-(it->second.size())) << "  " << it->second << endl;
+		mark(7);
+	}
+	cout << endl << menu_pick;
+}
+
+void menu() //menu główne
+{
+	while (true)
+	{
+		
+		show_menu_items();
+		switch (menu_choice(menu_pick))
+		{
+		case 0:
+			system("cls");
+			cout << "WCIŚNIJ STRZAŁKĘ, ŻEBY ZACZĄĆ!";
+			game();
 			break;
 
+		case 1:
+			system("cls");
+			read_result();
+			break;
+		case 2:
+			exit(0);
 		}
-
-
 	}
 }
 
 int main()
 {
-	srand(time(NULL));
 
-	game();
+	setlocale(LC_CTYPE, "Polish");
+	srand(time(NULL));
+	menu();
+	
 }
