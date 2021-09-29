@@ -34,6 +34,8 @@ bool _make_bigger, game_on = true;
 
 fstream file;
 
+void menu();
+
 deque<pair<int, int>>snake = {
 		{7,4}, {7,5}, {7,6}, {7,7}
 };
@@ -42,7 +44,7 @@ multimap<int, string>menu_items = {
 		{1,"GRAJ"},{2,"TABLICA WYNIKÓW"},{3,"WYJDŹ"}
 };
 
-map<int, string>records;
+multimap<int, string, greater<int>>records;
 
 void build_a_level() //budowa poziomu
 {
@@ -145,7 +147,7 @@ void apple_collision(bool& make_bigger)   //sprawdza czy była kolizja, jeśli t
 	else { make_bigger = false; }
 }
 
-void write_result() 
+void write_result()  //zapisuje wynik do pliku
 {
 	string nick;
 	cout <<"TWÓJ WYNIK TO: "<<score << " DAJ NICK: "; cin >> nick;
@@ -156,45 +158,72 @@ void write_result()
 	Sleep(3000);
 }
 
-void read_result() 
+void record_reset(char rc) //do resetowania rekordów
+{
+if(rc=='r')
+{
+	cout << "Czy napewno usunąć wyniki? t/n";
+	cin >> rc;
+	if (rc == 't') 
+	{
+		file.open("rekordy.txt");
+		file.clear();
+		file.close();
+	}
+}
+}
+
+void read_result() //wypisuje na konsoli wyniki od najlepszego
 {
 	file.open("rekordy.txt", ios::in);
 	vector<string>tmp;
+	int intiger;
 	int i = 0;
+	records.clear();
 	if(!file.good())
 	{
 		cout << "NIE MA JESZCZE ŻADNYCH REKORDÓW";
 	}
 	else 
 	{
-		while (!file.eof()) 
+		
+		while (!file.eof())
 		{
 			string line;
 			getline(file, line);
 			tmp.push_back(line);
 		}
-		for (int i = 0; i < tmp.size(); i++) 
+		
+		for (int j = 0; j < tmp.size(); j++) 
 		{
-			int intiger = stoi(tmp[i]);
-			string line = tmp[++i];
-			records.insert({intiger, line});
+			if(j%2==0)
+			{
+				stringstream ss;
+				ss << tmp[j];  ss >> intiger;
+			}
+			else 
+			{
+				string line = tmp[j];
+				records.insert({ intiger, line });
+			}
 		}
 		for(multimap<int, string>::iterator iter=records.begin(); iter!=records.end();iter++)
 		{
 			cout << ++i << ". " << iter->second << " " << iter->first << endl;
 		}
-
+		cout << endl<<"JEŚLI CHCESZ ZRESETOWAĆ LISTĘ WYNIKÓW WCIŚNIJ r"<<endl;
 	}
 	file.close();
-	getchar();
+	char record_choice=getchar();
+	record_reset(record_choice);
 }
 
-void game_over()
+void game_over() //koniec gry
 {
 	system("cls");
 	cout << "GAME OVER"<<endl<<endl;
 	write_result();
-	exit(0);
+	menu();
 }
 
 void show_score()   // pokazuje wynik 
