@@ -155,7 +155,8 @@ void write_result()  //zapisuje wynik do pliku
 	file << score << endl << nick << endl;
 	cout << endl << "WYNIK ZAPISANY W TABELI REKORDÓW";
 	file.close();
-	Sleep(3000);
+	Sleep(2000);
+
 }
 
 void record_reset(char rc) //do resetowania rekordów
@@ -166,9 +167,9 @@ if(rc=='r')
 	cin >> rc;
 	if (rc == 't') 
 	{
-		file.open("rekordy.txt");
-		file.clear();
-		file.close();
+		remove("rekordy.txt");
+		cout << endl << "LISTA WYCZYSZCZONA";
+		getchar();
 	}
 }
 }
